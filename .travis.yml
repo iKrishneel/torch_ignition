@@ -1,0 +1,15 @@
+
+language: python
+
+python:
+    - 3.7
+
+install:
+    - pip install --upgrade pip setuptools wheel psutil pytest
+    - pip install --default-timeout=2000 -q -e .
+    - pip list
+    - pip install black
+script:
+    - black --check ./
+    - pytest -x tests
+sudo: required
