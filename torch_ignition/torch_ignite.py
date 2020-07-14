@@ -12,6 +12,7 @@ from torch.utils.tensorboard import SummaryWriter
 from ignite.engine import (Events, create_supervised_trainer,
                            create_supervised_evaluator)
 from ignite.metrics import Accuracy, Loss
+from ignite.handlers import Checkpoint, DiskSaver
 from torch_ignition.logger import get_logger
 
 
@@ -43,6 +44,7 @@ class TorchIgnite(object):
         self.criterion = criterion
         self.dataloader = dataloader
 
+        self.checkpoint_every = kwargs.get('checkpoint_every', 1)
         self.log_interval = kwargs.get('log_interval', 1)
         name = kwargs.get('name', self.__class__.__name__)
         device_id = kwargs.get('device_id', 0)
@@ -96,7 +98,7 @@ class TorchIgnite(object):
                 f'Iteration[{engine.state.iteration}/{length}] ' +
                 f'Loss: {engine.state.output:.2f}')
             self.writer.add_scalar(
-                "training/loss", engine.state.output,
+                'training/loss', engine.state.output,
                 engine.state.iteration)
 
         @trainer.on(Events.EPOCH_COMPLETED)
@@ -131,6 +133,14 @@ class TorchIgnite(object):
                 'valdation/avg_accuracy', avg_accuracy,
                 engine.state.epoch)
 
+        objects_to_checkpoint = dict(model=self.model,
+                                     optimizer=self.optimizer)
+        training_checkpoint = Checkpoint(
+            to_save=objects_to_checkpoint,
+            save_handler=DiskSaver(self.log_dir, require_empty=False),
+            n_saved=None, global_step_transform=lambda *_: trainer.state.epoch,)
+        trainer.add_event_handler(
+            Events.EPOCH_COMPLETED(every=self.checkpoint_every), training_checkpoint)
         trainer.run(train_loader, max_epochs=epochs)
 
     def trainable_parameters(self):
