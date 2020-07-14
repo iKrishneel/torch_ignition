@@ -6,3 +6,4 @@ pytorch-ignite
 torch
 torchvision
 tqdm
+tensorboard
