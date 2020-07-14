@@ -1,0 +1,8 @@
+colorlog
+pillow
+numpy
+matplotlib
+pytorch-ignite
+torch
+torchvision
+tqdm
