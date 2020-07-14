@@ -49,7 +49,7 @@ class TorchIgnite(object):
 
         # logger
         self.logger = get_logger(name)
-
+        
         # device
         self.device = torch.device(
             f'cuda:{device_id}' \
@@ -65,7 +65,6 @@ class TorchIgnite(object):
 
         self.model.to(self.device)
         self.criterion.to(self.device)
-        self.optimizer.to(self.device)
 
         self.trainer = create_supervised_trainer(
             self.model, self.optimizer, self.criterion,
@@ -78,14 +77,20 @@ class TorchIgnite(object):
         self.logger.info('Setup completed')
         
     def __call__(self, epochs: int):
+        self.logger.info('Start ignition')
+        self.logger.info(f'Total epochs: {epochs}')
+        
         self.run(epochs=epochs)
         self.writer.close()
 
     def run(self, epochs: int = 1):
+        trainer = self.trainer
+        train_loader = self.dataloader['train']
+        val_loader = self.dataloader['val']
         
-        @trainer.on(Events.ITERATION_COMPLETED(every=log_interval))
+        @trainer.on(Events.ITERATION_COMPLETED(every=self.log_interval))
         def log_training_loss(engine):
-            length = len(self.dataloader['train'])
+            length = len(train_loader)
             self.logger.info(
                 f'Epoch[{engine.state.epoch}] ' + \
                 f'Iteration[{engine.state.iteration}/{length}] ' + \
@@ -95,18 +100,38 @@ class TorchIgnite(object):
                 engine.state.iteration)
 
         @trainer.on(Events.EPOCH_COMPLETED)
-            def log_training_results(engine):
-            evaluator.run(train_loader)
-            metrics = evaluator.state.metrics
-            avg_accuracy = metrics["accuracy"]
-            avg_nll = metrics["nll"]
-            print(
-                "Training Results - Epoch: {}  Avg accuracy: {:.2f} Avg loss: {:.2f}".format(
-                    engine.state.epoch, avg_accuracy, avg_nll
-                )
-            )
-            writer.add_scalar("training/avg_loss", avg_nll, engine.state.epoch)
-            writer.add_scalar("training/avg_accuracy", avg_accuracy, engine.state.epoch)
+        def log_training_results(engine):
+            self.evaluator.run(train_loader)
+            metrics = self.evaluator.state.metrics
+            avg_accuracy = metrics['accuracy']
+            avg_loss = metrics['loss']
+            self.logger.info(
+                f'Training Results - Epoch: {engine.state.epoch}  ' + \
+                f'Avg accuracy: {avg_accuracy:.2f}' + \
+                f'Avg loss: {avg_loss:.2f}')
+            self.writer.add_scalar(
+                'training/avg_loss', avg_loss, engine.state.epoch)
+            self.writer.add_scalar(
+                'training/avg_accuracy', avg_accuracy,
+                engine.state.epoch)
+
+        @trainer.on(Events.EPOCH_COMPLETED)
+        def log_validation_results(engine):
+            self.evaluator.run(val_loader)
+            metrics = self.evaluator.state.metrics
+            avg_accuracy = metrics['accuracy']
+            avg_loss = metrics['loss']
+            self.logger.info(
+                f'Validation Results - Epoch: {engine.state.epoch} ' +
+                f'Avg accuracy: {avg_accuracy:.2f} ' +
+                f'Avg loss: {avg_loss:.2f}')
+            self.writer.add_scalar(
+                'valdation/avg_loss', avg_loss, engine.state.epoch)           
+            self.writer.add_scalar(
+                'valdation/avg_accuracy', avg_accuracy,
+                engine.state.epoch)
+
+        trainer.run(train_loader, max_epochs=epochs)
 
     def trainable_parameters(self):
         total_params = 0
@@ -119,50 +144,10 @@ class TorchIgnite(object):
         return str(self.__call__.__name__.upper())
 
     def __del__(self):
-        del self.writer
-        del self.evaluator
-
-        
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--train', action='store_true', default=True)
-    parser.add_argument(
-        '--debug', action='store_true', default=False)
-    parser.add_argument(
-        '--dataset', required=False, type=str,
-        default='/workspace/datasets/')
-    parser.add_argument(
-        '--n_class', required=False, type=int, default=1)
-    parser.add_argument(
-        '--log_dir', required=False, type=str, default='../logs')
-    parser.add_argument(
-        '--epochs', type=int, required=False, default=100)
-    parser.add_argument(
-        '--lr', type=float, required=False, default=3e-4)
-    parser.add_argument(
-        '--decay', type=float, required=False, default=0.0)
-    parser.add_argument(
-        '--schedule_lr', action='store_true', default=False)
-    parser.add_argument(
-        '--device_id', type=int, required=False, default=0)
-    parser.add_argument(
-        '--lr_decay', type=float, required=False, default=None)
-    parser.add_argument(
-        '--lr_decay_epoch', type=int, required=False, default=-1)
-    parser.add_argument(
-        '--weights', type=str, required=False, default=None)
-    parser.add_argument(
-        '--snapshot', type=int, required=False, default=25)
-    parser.add_argument(
-        '--batch', type=int, required=False, default=1)
-    parser.add_argument(
-        '--width', type=int, required=False, default=224)
-    parser.add_argument(
-        '--height', type=int, required=False, default=224)
-    parser.add_argument(
-        '--channel', type=int, required=False, default=3)
-    
-    args = parser.parse_args()
-    args = args.__dict__
-    TorchIgnite(**args)
+        try:
+            del self.writer
+            del self.self.evaluator
+            del self.trainer
+            del self.dataloader
+        except:
+            pass

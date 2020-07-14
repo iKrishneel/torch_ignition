@@ -19,3 +19,4 @@ eggs/
 .pytest_cache/
 .coverage
 
+logs/*
