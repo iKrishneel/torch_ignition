@@ -137,10 +137,15 @@ class TorchIgnite(object):
                                      optimizer=self.optimizer)
         training_checkpoint = Checkpoint(
             to_save=objects_to_checkpoint,
-            save_handler=DiskSaver(self.log_dir, require_empty=False),
-            n_saved=None, global_step_transform=lambda *_: trainer.state.epoch,)
+            save_handler=DiskSaver(
+                self.log_dir,
+                require_empty=False),
+            n_saved=None,
+            global_step_transform=lambda *_: trainer.state.epoch,
+        )
         trainer.add_event_handler(
-            Events.EPOCH_COMPLETED(every=self.checkpoint_every), training_checkpoint)
+            Events.EPOCH_COMPLETED(every=self.checkpoint_every),
+            training_checkpoint)
         trainer.run(train_loader, max_epochs=epochs)
 
     def trainable_parameters(self):
