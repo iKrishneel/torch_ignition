@@ -15,14 +15,14 @@ class CustomDataloader(torch.utils.data.Dataset):
                  dataset: list,
                  input_shape: list = [3, 224, 224],
                  batch_size: int = 1,
-                 transform = None,
-                 target_transform = None,
+                 transform=None,
+                 target_transform=None,
                  shuffle: bool = False):
         super(CustomDataloader, self).__init__()
 
         assert batch_size > 0
         assert len(input_shape) == 3
-        
+
         self._transform = transform
         self._target_transform = target_transform
         self._input_shape = input_shape
@@ -54,7 +54,7 @@ class CustomDataloader(torch.utils.data.Dataset):
         if dsize < ed:
             st -= (ed - dsize - 1)
             ed = dsize - 1
-        
+
         for k, i in enumerate(self.indices_cache[st:ed]):
             im, mk = self.load(index=i)
             batch_images[k] = im
@@ -64,7 +64,7 @@ class CustomDataloader(torch.utils.data.Dataset):
 
     def load(self, index: int):
         im, mk = self.dataset[index]
-        
+
         if np.random.choice([0, 1]):
             im = im.transpose(Image.FLIP_LEFT_RIGHT)
             mk = mk.transpose(Image.FLIP_LEFT_RIGHT)
@@ -89,7 +89,7 @@ class Dataloader(object):
                  dataset_dir: str,
                  input_shape: list = [3, 224, 224],
                  batch_size: int = 1):
-    
+
         assert len(input_shape) == 3
         assert os.path.isdir(dataset_dir)
 
@@ -105,7 +105,7 @@ class Dataloader(object):
             transforms.ToTensor(),
             transforms.Normalize(mean=mean, std=std),
         ])
-        
+
         interpolation = Image.NEAREST
         transform_train_target = transforms.Compose([
             transforms.Resize([256, 256],
@@ -116,7 +116,7 @@ class Dataloader(object):
             # transforms.RandomHorizontalFlip(p=0.5),
             transforms.ToTensor(),
         ])
-        
+
         transform_val = transforms.Compose([
             transforms.Resize(input_shape[1:]),
             transforms.ToTensor(),
@@ -134,7 +134,7 @@ class Dataloader(object):
         download = False
         train_ds = datasets.VOCSegmentation(
             root=dataset_dir, image_set='train', download=download)
-        
+
         self._train_dl = CustomDataloader(
             train_ds, batch_size=batch_size,
             input_shape=input_shape,
@@ -162,11 +162,17 @@ class Dataloader(object):
 
 if __name__ == '__main__':
 
-    d = Dataloader('/workspace/datasets/', input_shape=[3, 224, 224], batch_size=128)
+    d = Dataloader(
+        '/workspace/datasets/',
+        input_shape=[
+            3,
+            224,
+            224],
+        batch_size=128)
 
     for i in d.train_data:
         print(len(i))
         break
-    
+
     import IPython
     IPython.embed()

@@ -37,25 +37,25 @@ class TorchIgnite(object):
                  dataloader: dict,
                  **kwargs):
         super(TorchIgnite, self).__init__()
-        
+
         self.model = model
         self.optimizer = optimizer
         self.criterion = criterion
         self.dataloader = dataloader
-        
+
         self.log_interval = kwargs.get('log_interval', 1)
         name = kwargs.get('name', self.__class__.__name__)
         device_id = kwargs.get('device_id', 0)
 
         # logger
         self.logger = get_logger(name)
-        
+
         # device
         self.device = torch.device(
-            f'cuda:{device_id}' \
+            f'cuda:{device_id}'
             if torch.cuda.is_available() else 'cpu')
         self.logger.info(f'Device: {self.device}')
-        
+
         # logging directory
         log_dir = kwargs.get('log_dir', '../logs')
         self.log_dir = create_logging_folder(log_dir, name.lower())
@@ -69,17 +69,17 @@ class TorchIgnite(object):
         self.trainer = create_supervised_trainer(
             self.model, self.optimizer, self.criterion,
             device=self.device)
-        
+
         val_metrics = dict(accuracy=Accuracy(), loss=Loss(criterion))
         self.evaluator = create_supervised_evaluator(
             self.model, metrics=val_metrics, device=self.device)
 
         self.logger.info('Setup completed')
-        
+
     def __call__(self, epochs: int):
         self.logger.info('Start ignition')
         self.logger.info(f'Total epochs: {epochs}')
-        
+
         self.run(epochs=epochs)
         self.writer.close()
 
@@ -87,13 +87,13 @@ class TorchIgnite(object):
         trainer = self.trainer
         train_loader = self.dataloader['train']
         val_loader = self.dataloader['val']
-        
+
         @trainer.on(Events.ITERATION_COMPLETED(every=self.log_interval))
         def log_training_loss(engine):
             length = len(train_loader)
             self.logger.info(
-                f'Epoch[{engine.state.epoch}] ' + \
-                f'Iteration[{engine.state.iteration}/{length}] ' + \
+                f'Epoch[{engine.state.epoch}] ' +
+                f'Iteration[{engine.state.iteration}/{length}] ' +
                 f'Loss: {engine.state.output:.2f}')
             self.writer.add_scalar(
                 "training/loss", engine.state.output,
@@ -106,8 +106,8 @@ class TorchIgnite(object):
             avg_accuracy = metrics['accuracy']
             avg_loss = metrics['loss']
             self.logger.info(
-                f'Training Results - Epoch: {engine.state.epoch}  ' + \
-                f'Avg accuracy: {avg_accuracy:.2f}' + \
+                f'Training Results - Epoch: {engine.state.epoch}  ' +
+                f'Avg accuracy: {avg_accuracy:.2f}' +
                 f'Avg loss: {avg_loss:.2f}')
             self.writer.add_scalar(
                 'training/avg_loss', avg_loss, engine.state.epoch)
@@ -126,7 +126,7 @@ class TorchIgnite(object):
                 f'Avg accuracy: {avg_accuracy:.2f} ' +
                 f'Avg loss: {avg_loss:.2f}')
             self.writer.add_scalar(
-                'valdation/avg_loss', avg_loss, engine.state.epoch)           
+                'valdation/avg_loss', avg_loss, engine.state.epoch)
             self.writer.add_scalar(
                 'valdation/avg_accuracy', avg_accuracy,
                 engine.state.epoch)
@@ -139,7 +139,7 @@ class TorchIgnite(object):
             if parameter.requires_grad:
                 total_params += np.prod(parameter.size())
         self.logger.info(f'total_params: {total_params}')
-    
+
     def __str__(self):
         return str(self.__call__.__name__.upper())
 
@@ -149,5 +149,5 @@ class TorchIgnite(object):
             del self.self.evaluator
             del self.trainer
             del self.dataloader
-        except:
+        except BaseException:
             pass

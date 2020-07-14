@@ -2,14 +2,13 @@
 language: python
 
 python:
-    - 3.7
+    - 3.8
 
 install:
     - pip install --upgrade pip setuptools wheel psutil pytest
-    - pip install --default-timeout=2000 -q -e .
+    - pip install --default-timeout=5000 -q -r requirements.txt
     - pip list
-    - pip install black
+    - pip install pycodestyle
 script:
-    - black --check ./
+    - pycodestyle .  --max-line-length=80 --ignore=E127,E121,E126,W504
     - pytest -x tests
-sudo: required
