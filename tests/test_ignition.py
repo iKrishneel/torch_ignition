@@ -19,11 +19,10 @@ def test_ignite():
                     optimizer=optim,
                     criterion=criterion,
                     dataloader=None)
-    
+
     assert t.evaluator
     assert t.trainer
     assert t.writer
     assert t.model == model
     assert t.criterion == criterion
     assert t.optimizer == optim
-
