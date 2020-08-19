@@ -11,5 +11,5 @@ install:
     - pip install black flake8
 script:
     - flake8 .
-    - black -t py38 -l 80
+    - black -t py38 -l 80 .
     - pytest -x tests
