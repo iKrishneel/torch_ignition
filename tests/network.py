@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-import torch
-from torch.utils.data import DataLoader
 from torch import nn
 import torch.nn.functional as F
 

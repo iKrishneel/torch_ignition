@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import argparse
-import torch
 from torch import nn
 from torch.utils.data import DataLoader
 import torch.nn.functional as F
@@ -36,59 +35,78 @@ def get_data_loaders(train_batch_size, val_batch_size):
     data_transform = Compose([ToTensor(), Normalize((0.1307,), (0.3081,))])
 
     train_loader = DataLoader(
-        MNIST(download=True, root=".",
-              transform=data_transform, train=True),
-        batch_size=train_batch_size, shuffle=True)
+        MNIST(download=True, root=".", transform=data_transform, train=True),
+        batch_size=train_batch_size,
+        shuffle=True,
+    )
 
     val_loader = DataLoader(
-        MNIST(download=False, root=".",
-              transform=data_transform, train=False),
-        batch_size=val_batch_size, shuffle=False)
+        MNIST(download=False, root=".", transform=data_transform, train=False),
+        batch_size=val_batch_size,
+        shuffle=False,
+    )
     return dict(train=train_loader, val=val_loader)
 
 
 def run(args):
     model = Net()
-    optimizer = SGD(model.parameters(),
-                    lr=args.lr, momentum=args.momentum)
+    optimizer = SGD(model.parameters(), lr=args.lr, momentum=args.momentum)
     criterion = nn.NLLLoss()
-    dataloader = get_data_loaders(args.batch_size,
-                                  args.val_batch_size)
+    dataloader = get_data_loaders(args.batch_size, args.val_batch_size)
 
-    ignite = TorchIgnite(model=model,
-                         optimizer=optimizer,
-                         criterion=criterion,
-                         dataloader=dataloader,
-                         name='mnist',
-                         log_interval=1)
+    ignite = TorchIgnite(
+        model=model,
+        optimizer=optimizer,
+        criterion=criterion,
+        dataloader=dataloader,
+        name="mnist",
+        log_dir=args.log_dir,
+        log_interval=1,
+    )
     ignite(args.epochs)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--batch_size", type=int, default=64,
-        help="input batch size for training (default: 64)")
+        "--batch_size",
+        type=int,
+        default=64,
+        help="input batch size for training (default: 64)",
+    )
     parser.add_argument(
-        "--val_batch_size", type=int, default=1000,
-        help="input batch size for validation (default: 1000)")
+        "--val_batch_size",
+        type=int,
+        default=1000,
+        help="input batch size for validation (default: 1000)",
+    )
     parser.add_argument(
-        "--epochs", type=int, default=10,
-        help="number of epochs to train (default: 10)")
+        "--epochs",
+        type=int,
+        default=10,
+        help="number of epochs to train (default: 10)",
+    )
     parser.add_argument(
-        "--lr", type=float, default=0.01,
-        help="learning rate (default: 0.01)")
+        "--lr", type=float, default=0.01, help="learning rate (default: 0.01)"
+    )
     parser.add_argument(
         "--momentum",
         type=float,
         default=0.5,
-        help="SGD momentum (default: 0.5)")
+        help="SGD momentum (default: 0.5)",
+    )
     parser.add_argument(
-        "--log_interval", type=int, default=10,
-        help="how many batches to wait before logging training status")
+        "--log_interval",
+        type=int,
+        default=10,
+        help="how many batches to wait before logging training status",
+    )
     parser.add_argument(
-        "--log_dir", type=str, default="tensorboard_logs",
-        help="log directory for Tensorboard log output")
+        "--log_dir",
+        type=str,
+        default="tensorboard_logs",
+        help="log directory for Tensorboard log output",
+    )
 
     args = parser.parse_args()
     run(args)

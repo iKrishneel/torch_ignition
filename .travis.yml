@@ -6,9 +6,10 @@ python:
 
 install:
     - pip install --upgrade pip setuptools wheel psutil pytest
-    - pip install --default-timeout=5000 -q -r requirements.txt
+    - pip install -r requirements.txt
     - pip list
-    - pip install pycodestyle
+    - pip install black flake8
 script:
-    - pycodestyle .  --max-line-length=80 --ignore=E127,E121,E126,W504
+    - flake8 .
+    - black -t py38 -l 80
     - pytest -x tests
