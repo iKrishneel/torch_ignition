@@ -9,6 +9,7 @@ from torch.optim import SGD
 from torchvision.datasets import MNIST
 from torchvision.transforms import Compose, ToTensor, Normalize
 
+from ignite.metrics import Accuracy
 from torch_ignition import TorchIgnite
 
 
@@ -59,6 +60,7 @@ def run(args):
         optimizer=optimizer,
         criterion=criterion,
         dataloader=dataloader,
+        metric=Accuracy(),
         name="mnist",
         log_dir=args.log_dir,
         log_interval=1,

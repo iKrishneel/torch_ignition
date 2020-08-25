@@ -14,7 +14,7 @@ from ignite.engine import (
     create_supervised_trainer,
     create_supervised_evaluator,
 )
-from ignite.metrics import Accuracy, Loss
+from ignite.metrics import Loss
 from ignite.handlers import Checkpoint, DiskSaver
 from torch_ignition.logger import get_logger
 
@@ -38,6 +38,7 @@ class TorchIgnite(object):
         optimizer: torch.optim,
         criterion,
         dataloader: dict,
+        metric,
         **kwargs,
     ):
         super(TorchIgnite, self).__init__()
@@ -52,7 +53,6 @@ class TorchIgnite(object):
         name = kwargs.get("name", self.__class__.__name__)
         device_id = kwargs.get("device_id", 0)
 
-        # logger
         self.logger = get_logger(name)
 
         # device
@@ -75,7 +75,7 @@ class TorchIgnite(object):
             self.model, self.optimizer, self.criterion, device=self.device
         )
 
-        val_metrics = dict(accuracy=Accuracy(), loss=Loss(criterion))
+        val_metrics = dict(accuracy=metric, loss=Loss(criterion))
         self.evaluator = create_supervised_evaluator(
             self.model, metrics=val_metrics, device=self.device
         )
